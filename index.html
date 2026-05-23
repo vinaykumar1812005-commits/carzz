@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carzz - 3D City Racing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- SPLASH SCREEN -->
+  <div id="splash-screen" class="splash-container">
+    <div class="splash-vignette"></div>
+    <div class="splash-content">
+      <div id="start-oval" class="red-oval">
+        <h1 class="logo-text">carzz</h1>
+      </div>
+      <p class="click-prompt">CLICK TO ENTER THE CITY</p>
+    </div>
+  </div>
+
+  <!-- MAIN GAME -->
+  <div id="game-container" class="game-container hidden">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Minimap -->
+    <div class="minimap-wrapper">
+      <span class="minimap-label">CITY MAP</span>
+      <canvas id="minimapCanvas" width="160" height="160"></canvas>
+    </div>
+
+    <!-- Top HUD -->
+    <header class="hud-header">
+      <div class="hud-panel speedo-panel">
+        <span class="hud-label">SPEED</span>
+        <div class="hud-display">
+          <span id="speed-val" class="hud-value">0</span>
+          <span class="hud-unit">km/h</span>
+        </div>
+      </div>
+      <div class="hud-logo">CARZZ</div>
+      <div class="hud-panel rpm-panel">
+        <span class="hud-label">RPM</span>
+        <div class="hud-display">
+          <span id="rpm-val" class="hud-value">1000</span>
+          <span class="hud-unit">rpm</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sidebar Right: Help + Volume -->
+    <div class="sidebar-right">
+      <button id="help-btn" class="glass-btn sidebar-btn" title="How to Play">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+      <div class="volume-control-panel">
+        <button id="mute-btn" class="glass-btn volume-icon-btn">
+          <svg id="volume-high-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <svg id="volume-mute-icon" class="hidden" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+        </button>
+        <div class="slider-wrapper">
+          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="volume-slider">
+        </div>
+      </div>
+    </div>
+
+    <!-- Left Controls: Steering -->
+    <div class="controls-left">
+      <div class="steering-system">
+        <div id="virtual-wheel" class="steering-wheel">
+          <div class="wheel-center"></div>
+          <div class="wheel-spoke spoke-left"></div>
+          <div class="wheel-spoke spoke-right"></div>
+          <div class="wheel-spoke spoke-bottom"></div>
+        </div>
+        <div class="steering-buttons">
+          <button id="steer-left-btn" class="control-btn round-btn steer-btn" title="Steer Left">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="3" fill="none"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <button id="steer-right-btn" class="control-btn round-btn steer-btn" title="Steer Right">
+            <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="3" fill="none"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Controls: Brake on top, Gas below -->
+    <div class="controls-right">
+      <div class="pedal-wrapper"><span class="pedal-label">BRAKE</span><button id="brake-btn" class="pedal brake-pedal"><div class="pedal-grooves"></div></button></div>
+      <div class="pedal-wrapper"><span class="pedal-label">GAS</span><button id="gas-btn" class="pedal gas-pedal"><div class="pedal-grooves"></div></button></div>
+    </div>
+
+    <!-- Bottom Footer -->
+    <footer class="hud-footer">
+      <div class="bottom-left-panel">
+        <button id="engine-start-btn" class="engine-btn"><span class="indicator-led"></span><span class="btn-text">START ENGINE</span></button>
+        <div class="car-selection-container">
+          <div id="active-car-display" class="active-car-pill">
+            <span id="active-car-logo" class="brand-emblem-holder"><svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 12 L12 3 M12 12 L4.2 16.5 M12 12 L19.8 16.5"/></svg></span>
+            <span id="active-car-name" class="active-car-name">Mercedes-Benz</span>
+            <svg class="chevron-up" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          </div>
+          <div id="car-selector-dropdown" class="car-selector-dropdown hidden">
+            <div class="car-option" data-car="mercedes"><span class="emblem"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 12 L12 3 M12 12 L4.2 16.5 M12 12 L19.8 16.5"/></svg></span><span class="car-label">Mercedes-Benz</span></div>
+            <div class="car-option" data-car="bmw"><span class="emblem"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 2 L12 22 M2 12 L22 12"/></svg></span><span class="car-label">BMW M5</span></div>
+            <div class="car-option" data-car="bugatti"><span class="emblem"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.5" fill="none"><ellipse cx="12" cy="12" rx="9" ry="5"/><path d="M9 12h6 M12 10v4"/></svg></span><span class="car-label">Bugatti Chiron</span></div>
+            <div class="car-option" data-car="rollsroyce"><span class="emblem"><svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="1.5" fill="none"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h4v4h-4z M11 11l3 6 M9 17h6"/></svg></span><span class="car-label">Rolls-Royce</span></div>
+          </div>
+        </div>
+        <button id="settings-btn" class="glass-btn round-btn footer-icon-btn" title="Settings">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+      <div class="vehicle-specs-hud">
+        <div class="spec-bar-wrapper"><span class="spec-label font-sporty">SPEED</span><div class="spec-bar-bg"><div id="spec-speed-fill" class="spec-bar-fill" style="width:80%"></div></div></div>
+        <div class="spec-bar-wrapper"><span class="spec-label font-sporty">ACCEL</span><div class="spec-bar-bg"><div id="spec-accel-fill" class="spec-bar-fill" style="width:70%"></div></div></div>
+        <div class="spec-bar-wrapper"><span class="spec-label font-sporty">STEER</span><div class="spec-bar-bg"><div id="spec-steer-fill" class="spec-bar-fill" style="width:90%"></div></div></div>
+      </div>
+    </footer>
+
+    <!-- Help Overlay -->
+    <div id="help-overlay" class="overlay-panel hidden">
+      <div class="overlay-content help-card">
+        <button id="close-help-btn" class="close-overlay-btn">&times;</button>
+        <h2>HOW TO DRIVE</h2>
+        <div class="help-sections">
+          <div class="help-section"><h3>🎮 On-Screen</h3><p><b>GAS/BRAKE:</b> Hold the pedals on the right side.</p><p><b>STEERING:</b> Press left/right arrow buttons.</p><p><b>ENGINE:</b> Click START ENGINE at bottom-left.</p></div>
+          <div class="help-section"><h3>⌨️ Keyboard</h3><p><b>W / ↑:</b> Accelerate</p><p><b>S / ↓ / Space:</b> Brake</p><p><b>A / ←:</b> Steer Left</p><p><b>D / →:</b> Steer Right</p></div>
+        </div>
+        <p class="help-tip">Explore the American city! Watch out for buildings!</p>
+      </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="overlay-panel hidden">
+      <div class="overlay-content settings-card">
+        <button id="close-settings-btn" class="close-overlay-btn">&times;</button>
+        <h2>SETTINGS</h2>
+        <div class="setting-row"><span class="setting-label">Map: American City</span><p class="setting-description">Drive through a vibrant city with skyscrapers, parks, and busy streets.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="cars.js"></script>
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const splash = document.getElementById("splash-screen");
+    const gameC = document.getElementById("game-container");
+    const oval = document.getElementById("start-oval");
+    const engBtn = document.getElementById("engine-start-btn");
+    const carDisplay = document.getElementById("active-car-display");
+    const carDrop = document.getElementById("car-selector-dropdown");
+    const carOpts = document.querySelectorAll(".car-option");
+    const carLogo = document.getElementById("active-car-logo");
+    const carName = document.getElementById("active-car-name");
+    const helpBtn = document.getElementById("help-btn");
+    const helpOv = document.getElementById("help-overlay");
+    const closeHelp = document.getElementById("close-help-btn");
+    const setBtn = document.getElementById("settings-btn");
+    const setOv = document.getElementById("settings-overlay");
+    const closeSet = document.getElementById("close-settings-btn");
+    const volSlider = document.getElementById("volume-slider");
+    const muteBtn = document.getElementById("mute-btn");
+    const volHi = document.getElementById("volume-high-icon");
+    const volMu = document.getElementById("volume-mute-icon");
+    const gasBtn = document.getElementById("gas-btn");
+    const brakeBtn = document.getElementById("brake-btn");
+    const stLBtn = document.getElementById("steer-left-btn");
+    const stRBtn = document.getElementById("steer-right-btn");
+    const specSp = document.getElementById("spec-speed-fill");
+    const specAc = document.getElementById("spec-accel-fill");
+    const specSt = document.getElementById("spec-steer-fill");
+
+    // Init game
+    window.carzzGame.init("gameCanvas");
+
+    // Splash click
+    oval.addEventListener("click", () => {
+      if (window.carzzAudio) window.carzzAudio.init();
+      splash.classList.add("fade-out");
+      gameC.classList.remove("hidden"); gameC.classList.add("fade-in");
+      setTimeout(() => { splash.style.display = "none"; }, 800);
+    });
+
+    // Engine
+    engBtn.addEventListener("click", () => {
+      const on = window.carzzGame.toggleEngine();
+      engBtn.classList.toggle("engine-running", on);
+      engBtn.querySelector(".btn-text").textContent = on ? "STOP ENGINE" : "START ENGINE";
+    });
+
+    // Car selector
+    carDisplay.addEventListener("click", e => { e.stopPropagation(); carDrop.classList.toggle("hidden"); });
+    document.addEventListener("click", () => carDrop.classList.add("hidden"));
+    carOpts.forEach(o => o.addEventListener("click", e => {
+      e.stopPropagation();
+      const k = o.getAttribute("data-car");
+      window.carzzGame.setCar(k);
+      carLogo.innerHTML = o.querySelector(".emblem").innerHTML;
+      carName.textContent = o.querySelector(".car-label").textContent;
+      carDrop.classList.add("hidden");
+      const d = window.CAR_CONFIGS[k];
+      if (d) { specSp.style.width=d.stats.speed*10+"%"; specAc.style.width=d.stats.acceleration*10+"%"; specSt.style.width=d.stats.handling*10+"%"; }
+    }));
+    const ic = window.CAR_CONFIGS['mercedes'];
+    specSp.style.width=ic.stats.speed*10+"%"; specAc.style.width=ic.stats.acceleration*10+"%"; specSt.style.width=ic.stats.handling*10+"%";
+
+    // Help/Settings overlays
+    helpBtn.addEventListener("click", () => helpOv.classList.remove("hidden"));
+    closeHelp.addEventListener("click", () => helpOv.classList.add("hidden"));
+    setBtn.addEventListener("click", () => setOv.classList.remove("hidden"));
+    closeSet.addEventListener("click", () => setOv.classList.add("hidden"));
+    document.querySelectorAll(".overlay-panel").forEach(p => p.addEventListener("click", e => { if (e.target===p) p.classList.add("hidden"); }));
+
+    // Volume
+    let lastVol = 0.5;
+    volSlider.addEventListener("input", e => {
+      const v = parseFloat(e.target.value);
+      if (window.carzzAudio) window.carzzAudio.setVolume(v);
+      volHi.classList.toggle("hidden", v===0); volMu.classList.toggle("hidden", v!==0);
+    });
+    muteBtn.addEventListener("click", () => {
+      if (volSlider.value > 0) { lastVol=volSlider.value; volSlider.value=0; if(window.carzzAudio) window.carzzAudio.setVolume(0); volHi.classList.add("hidden"); volMu.classList.remove("hidden"); }
+      else { volSlider.value=lastVol; if(window.carzzAudio) window.carzzAudio.setVolume(lastVol); volHi.classList.remove("hidden"); volMu.classList.add("hidden"); }
+    });
+
+    // On-screen controls
+    const bind = (btn, prop) => {
+      const set = a => { window.carzzGame.uiControls[prop]=a; btn.classList.toggle("pressed",a); };
+      btn.addEventListener("mousedown",()=>set(true)); btn.addEventListener("mouseup",()=>set(false)); btn.addEventListener("mouseleave",()=>set(false));
+      btn.addEventListener("touchstart",e=>{e.preventDefault();set(true);}); btn.addEventListener("touchend",e=>{e.preventDefault();set(false);});
+    };
+    bind(gasBtn,"accelerating"); bind(brakeBtn,"braking"); bind(stLBtn,"steeringLeft"); bind(stRBtn,"steeringRight");
+  });
+  </script>
+</body>
+</html>
