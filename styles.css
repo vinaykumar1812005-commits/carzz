@@ -95,10 +95,10 @@ body {
   color: #fff; cursor: pointer; transition: background 0.2s, transform 0.2s; outline: none;
 }
 .glass-btn:hover { background: rgba(255,255,255,0.12); color: var(--car-theme-color); transform: translateY(-2px); }
-.volume-control-panel { display: flex; flex-direction: column; align-items: center; border-radius: 12px; padding: 10px 8px 16px 8px; width: 46px; height: 160px; gap: 12px; }
-.volume-icon-btn { background: transparent; border: none; color: #a0a5b5; cursor: pointer; outline: none; display: flex; justify-content: center; align-items: center; }
+.volume-control-panel { position: absolute; top: 18px; right: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; padding: 6px; width: 40px; height: 40px; gap: 6px; z-index: 60; pointer-events: auto; }
+.volume-control-panel .slider-wrapper { display: none; }
+.volume-icon-btn { background: transparent; border: none; color: #a0a5b5; cursor: pointer; outline: none; display: flex; justify-content: center; align-items: center; width: 32px; height: 32px; }
 .volume-icon-btn:hover { color: #fff; }
-.slider-wrapper { height: 80px; display: flex; justify-content: center; align-items: center; }
 .volume-slider { appearance: slider-vertical; width: 4px; height: 80px; background: rgba(255,255,255,0.15); border-radius: 3px; outline: none; cursor: pointer; }
 
 /* LEFT CONTROLS: STEERING */
@@ -108,9 +108,10 @@ body {
   position: relative; width: 110px; height: 110px;
   border: 9px solid #1f1f2a; border-radius: 50%;
   box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 4px 8px rgba(255,255,255,0.1);
-  transition: transform 0.1s ease-out; pointer-events: none;
+  transition: transform 0.1s ease-out; cursor: grab;
   background: radial-gradient(circle, transparent 50%, #15151b 50%);
 }
+.steering-wheel:active { cursor: grabbing; }
 .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 28px; height: 28px; background: #111116; border: 3px solid #333; border-radius: 50%; }
 .wheel-spoke { position: absolute; background: #1b1b24; }
 .spoke-left { top: 50%; left: 8px; transform: translateY(-50%); width: 38px; height: 8px; }

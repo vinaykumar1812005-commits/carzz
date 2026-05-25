@@ -22,6 +22,13 @@
     </div>
   </div>
 
+  <!-- In-page error panel (visible if JS throws) -->
+  <div id="error-panel" style="position:fixed;left:12px;bottom:12px;z-index:9999;max-width:40vw;display:none;background:rgba(0,0,0,0.85);border:2px solid #ff3b5c;padding:12px;border-radius:8px;color:#fff;font-family:sans-serif;">
+    <strong>Runtime error</strong>
+    <pre id="error-text" style="white-space:pre-wrap;word-wrap:break-word;margin-top:8px;font-size:12px;max-height:40vh;overflow:auto"></pre>
+    <button id="error-close" style="margin-top:8px;padding:6px 10px;border-radius:6px;border:none;background:#ff3b5c;color:#fff;cursor:pointer;">Close</button>
+  </div>
+
   <!-- MAIN GAME -->
   <div id="game-container" class="game-container hidden">
     <canvas id="gameCanvas"></canvas>
@@ -87,10 +94,10 @@
       </div>
     </div>
 
-    <!-- Right Controls: Brake on top, Gas below -->
+    <!-- Right Controls: Gas on top, Brake below -->
     <div class="controls-right">
-      <div class="pedal-wrapper"><span class="pedal-label">BRAKE</span><button id="brake-btn" class="pedal brake-pedal"><div class="pedal-grooves"></div></button></div>
       <div class="pedal-wrapper"><span class="pedal-label">GAS</span><button id="gas-btn" class="pedal gas-pedal"><div class="pedal-grooves"></div></button></div>
+      <div class="pedal-wrapper"><span class="pedal-label">BRAKE</span><button id="brake-btn" class="pedal brake-pedal"><div class="pedal-grooves"></div></button></div>
     </div>
 
     <!-- Bottom Footer -->
@@ -151,6 +158,35 @@
   <script src="game.js"></script>
 
   <script>
+  // Global error handlers to surface runtime issues on the page
+  (function(){
+    function showError(msg){
+      try {
+        const panel = document.getElementById('error-panel');
+        const txt = document.getElementById('error-text');
+        if (panel && txt) {
+          txt.textContent = msg;
+          panel.style.display = 'block';
+        } else {
+          alert(msg);
+        }
+      } catch(e){ console.error('Error showing error panel', e); }
+    }
+    window.addEventListener('error', function(ev){
+      const s = (ev && ev.error && ev.error.stack) ? ev.error.stack : (ev.message || String(ev));
+      console.error('window.error', ev);
+      showError(s);
+    });
+    window.addEventListener('unhandledrejection', function(ev){
+      console.error('unhandledrejection', ev);
+      const s = (ev && ev.reason && ev.reason.stack) ? ev.reason.stack : JSON.stringify(ev.reason);
+      showError('Unhandled Promise rejection:\n' + s);
+    });
+    document.addEventListener('DOMContentLoaded', function(){
+      const btn = document.getElementById('error-close'); if (btn) btn.addEventListener('click', ()=>{ document.getElementById('error-panel').style.display='none'; });
+    });
+  })();
+
   document.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const gameC = document.getElementById("game-container");
@@ -179,16 +215,31 @@
     const specAc = document.getElementById("spec-accel-fill");
     const specSt = document.getElementById("spec-steer-fill");
 
-    // Init game
-    window.carzzGame.init("gameCanvas");
+    const startGame = () => {
+      const pw = gameC.clientWidth || window.innerWidth;
+      const ph = gameC.clientHeight || window.innerHeight;
+      if (window.carzzGame && !window.carzzGame.renderer) {
+        window.carzzGame.init("gameCanvas");
+      }
+      if (window.carzzGame && window.carzzGame.camera && window.carzzGame.renderer) {
+        window.carzzGame.camera.aspect = pw / ph;
+        window.carzzGame.camera.updateProjectionMatrix();
+        window.carzzGame.renderer.setSize(pw, ph);
+      }
+    };
+
+    const revealGame = () => {
+      if (window.carzzAudio) window.carzzAudio.init();
+      gameC.classList.remove("hidden");
+      gameC.classList.add("fade-in");
+      splash.style.display = "none";
+      requestAnimationFrame(() => startGame());
+    };
 
     // Splash click
-    oval.addEventListener("click", () => {
-      if (window.carzzAudio) window.carzzAudio.init();
-      splash.classList.add("fade-out");
-      gameC.classList.remove("hidden"); gameC.classList.add("fade-in");
-      setTimeout(() => { splash.style.display = "none"; }, 800);
-    });
+    oval.addEventListener("click", revealGame);
+    // Auto show city immediately so the city renders without waiting
+    setTimeout(revealGame, 0);
 
     // Engine
     engBtn.addEventListener("click", () => {
@@ -239,6 +290,32 @@
       btn.addEventListener("touchstart",e=>{e.preventDefault();set(true);}); btn.addEventListener("touchend",e=>{e.preventDefault();set(false);});
     };
     bind(gasBtn,"accelerating"); bind(brakeBtn,"braking"); bind(stLBtn,"steeringLeft"); bind(stRBtn,"steeringRight");
+
+    // Virtual wheel: drag or touch to steer (works alongside arrow keys and steer buttons)
+    (function(){
+      const wheel = document.getElementById('virtual-wheel');
+      if (!wheel) return;
+      let active = false;
+      let centerX = 0;
+      const setSteer = v => {
+        // v range -1 (left) .. 1 (right)
+        const dead = 0.12;
+        window.carzzGame.uiControls.steeringLeft = v < -dead;
+        window.carzzGame.uiControls.steeringRight = v > dead;
+        wheel.style.transform = `rotate(${v * 80}deg)`;
+      };
+      const start = (clientX) => { active = true; const r = wheel.getBoundingClientRect(); centerX = r.left + r.width / 2; wheel.classList.add('pressed'); };
+      const move = (clientX) => { if (!active) return; const dx = clientX - centerX; const max = Math.max(40, wheel.clientWidth); const v = Math.max(-1, Math.min(1, dx / (max))); setSteer(v); };
+      const end = () => { if (!active) return; active = false; setSteer(0); wheel.classList.remove('pressed'); };
+
+      wheel.addEventListener('mousedown', e => { e.preventDefault(); start(e.clientX); });
+      window.addEventListener('mousemove', e => move(e.clientX));
+      window.addEventListener('mouseup', end);
+
+      wheel.addEventListener('touchstart', e => { e.preventDefault(); start(e.touches[0].clientX); });
+      window.addEventListener('touchmove', e => { if (e.touches && e.touches[0]) move(e.touches[0].clientX); }, { passive: false });
+      window.addEventListener('touchend', end);
+    })();
   });
   </script>
 </body>
